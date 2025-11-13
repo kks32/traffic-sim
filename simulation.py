@@ -50,6 +50,40 @@ def load_png_with_pil(filepath):
     data = pil_image.tobytes()
     return pygame.image.fromstring(data, size, 'RGB')
 
+class SimpleFont:
+    """Simple font wrapper to avoid pygame.font issues"""
+    def __init__(self, size):
+        self.size = size
+        from PIL import ImageFont, ImageDraw
+        try:
+            self.pil_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", size)
+        except:
+            self.pil_font = ImageFont.load_default()
+
+    def render(self, text, antialias, color, bgcolor=None):
+        """Render text using PIL"""
+        from PIL import ImageDraw
+        # Calculate text size
+        temp_img = Image.new('RGB', (1, 1))
+        draw = ImageDraw.Draw(temp_img)
+        bbox = draw.textbbox((0, 0), text, font=self.pil_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+
+        # Create image with text
+        if bgcolor:
+            img = Image.new('RGB', (text_width + 10, text_height + 10), bgcolor)
+        else:
+            img = Image.new('RGB', (text_width + 10, text_height + 10), (0, 0, 0))
+
+        draw = ImageDraw.Draw(img)
+        draw.text((5, 5), text, font=self.pil_font, fill=color)
+
+        # Convert to pygame surface
+        size = img.size
+        data = img.tobytes()
+        return pygame.image.fromstring(data, size, 'RGB')
+
 class TrafficSignal:
     def __init__(self, red, yellow, green):
         self.red = red
@@ -217,7 +251,7 @@ class Main:
     redSignal = load_png_with_pil('images/signals/red.png')
     yellowSignal = load_png_with_pil('images/signals/yellow.png')
     greenSignal = load_png_with_pil('images/signals/green.png')
-    font = pygame.font.Font(None, 30)
+    font = SimpleFont(30)
 
     thread2 = threading.Thread(name="generateVehicles",target=generateVehicles, args=())    # Generating vehicles
     thread2.daemon = True
